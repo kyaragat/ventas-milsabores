@@ -1,5 +1,6 @@
 package com.milsabores.ventas.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -7,47 +8,58 @@ import java.util.stream.Collectors;
 import com.milsabores.ventas.model.Boleta;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
-// Este DTO representa el formato final de una venta o boleta que será devuelto al Frontend.
-// Es decir: esto es lo que React consume cuando consulta una venta registrada.
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class VentaResponseDTO {
 
-    private Long id;                 // Identificador de la venta/boleta
-    private LocalDateTime fecha;     // Momento exacto en que se generó la venta
-    private Double total;            // Monto total calculado de la venta
-    private Long usuarioId;          // ID del usuario que realizó la compra
-    private List<DetalleResponseDTO> detalles; // Lista de productos incluidos en la venta
+    private Long id;
+    private LocalDateTime fecha;
+    private BigDecimal total;
+    private String nombreCliente;
+    private String emailCliente;
+    private String telefonoCliente;
+    private String direccionEnvio;
+    private String estado;
+    private List<DetalleResponseDTO> detalles;
 
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class DetalleResponseDTO {
-        private Long id;         // ID del detalle (línea de la boleta)
-        private Long productoId; // Producto asociado a este detalle
-        private Integer cantidad; // Unidades compradas de ese producto
-        private Double subtotal;  // Total correspondiente a esa línea (precio * cantidad)
+        private Long id;
+        private Long productoId;
+        private String nombreProducto;
+        private Integer cantidad;
+        private BigDecimal precioUnitario;
+        private BigDecimal subtotal;
     }
 
-    // Constructor que transforma automáticamente una entidad Boleta en un DTO listo para enviar al cliente
+    // Constructor para compatibilidad con modelo actual
     public VentaResponseDTO(Boleta boleta) {
-
-        // Copiamos los datos principales directamente desde la entidad JPA
         this.id = boleta.getId();
         this.fecha = boleta.getFecha();
         this.total = boleta.getTotal();
-        this.usuarioId = boleta.getUsuarioId();
-
-        // Convertimos cada detalle de la boleta a su correspondiente DTO
-        // usando programación funcional (streams) para simplificar el mapeo.
+        this.nombreCliente = boleta.getNombreCliente();
+        this.emailCliente = boleta.getEmailCliente();
+        this.telefonoCliente = boleta.getTelefonoCliente();
+        this.direccionEnvio = boleta.getDireccionEnvio();
+        this.estado = boleta.getEstado() != null ? boleta.getEstado().name() : "PENDIENTE";
+        
         this.detalles = boleta.getDetalles().stream()
             .map(detalle -> {
-                // Por cada detalle se construye su representación DTO
                 DetalleResponseDTO dto = new DetalleResponseDTO();
                 dto.setId(detalle.getId());
                 dto.setProductoId(detalle.getProductoId());
+                dto.setNombreProducto(detalle.getNombreProducto());
                 dto.setCantidad(detalle.getCantidad());
+                dto.setPrecioUnitario(detalle.getPrecioUnitario());
                 dto.setSubtotal(detalle.getSubtotal());
                 return dto;
             })
-            .collect(Collectors.toList()); // Convertimos el stream a una lista final
+            .collect(Collectors.toList());
     }
 }
