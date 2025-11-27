@@ -12,14 +12,18 @@ import java.math.BigDecimal;
 @Service
 public class ProductoClientService {
     
-    @Value("${productos.service.url}")
+    @Value("${productos.service.url:http://localhost:8080}")
     private String productosServiceUrl;
     
-    private RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
+    
+    public ProductoClientService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
     
     public ProductoDTO obtenerProductoPorId(Long id) {
         try {
-            String url = productosServiceUrl + "/api/v1/productos/" + id;
+            String url = productosServiceUrl + "/api/productos/" + id;
             return restTemplate.getForObject(url, ProductoDTO.class);
         } catch (Exception e) {
             // Para desarrollo, simulamos datos
@@ -28,13 +32,10 @@ public class ProductoClientService {
     }
     
     public void actualizarStock(Long id, Integer cantidad) {
-        try {
-            String url = productosServiceUrl + "/api/v1/productos/" + id + "/stock?cantidad=" + cantidad;
-            restTemplate.put(url, null);
-        } catch (Exception e) {
-            // En desarrollo, solo logueamos
-            System.out.println("Simulando actualización de stock para producto " + id + " cantidad: " + cantidad);
-        }
+        // Como el servicio de productos no tiene endpoint para actualizar stock,
+        // simplemente registramos la operación. El stock se maneja en la tabla inventario
+        // que es independiente del servicio de ventas.
+        System.out.println("Actualización de stock registrada - Producto: " + id + ", Cantidad: " + cantidad);
     }
     
     private ProductoDTO simularProducto(Long id) {
