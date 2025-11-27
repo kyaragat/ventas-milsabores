@@ -1,0 +1,12 @@
+milsaboresfinal_high = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.sa-valparaiso-1.oraclecloud.com))(connect_data=(service_name=g7e8e566edb2cdc_milsaboresfinal_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+milsaboresfinal_low = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.sa-valparaiso-1.oraclecloud.com))(connect_data=(service_name=g7e8e566edb2cdc_milsaboresfinal_low.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+milsaboresfinal_medium = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.sa-valparaiso-1.oraclecloud.com))(connect_data=(service_name=g7e8e566edb2cdc_milsaboresfinal_medium.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+milsaboresfinal_tp = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.sa-valparaiso-1.oraclecloud.com))(connect_data=(service_name=g7e8e566edb2cdc_milsaboresfinal_tp.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+milsaboresfinal_tpurgent = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.sa-valparaiso-1.oraclecloud.com))(connect_data=(service_name=g7e8e566edb2cdc_milsaboresfinal_tpurgent.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+
+
