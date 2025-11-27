@@ -2,30 +2,39 @@ package com.milsabores.ventas.dto;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Email;
 import lombok.Data;
 
-// Este DTO representa la información que llega desde el cliente al momento de registrar una venta.
-// En otras palabras, es el contenido que se envía en el cuerpo (body) del POST desde el Frontend.
 @Data
 public class VentaRequestDTO {
 
-    // ID del usuario que realiza la compra
-    private Long usuarioId;
+    @NotBlank(message = "El nombre del cliente es obligatorio")
+    private String nombreCliente;
+    
+    @Email(message = "Email inválido")
+    private String emailCliente;
+    
+    private String telefonoCliente;
+    
+    @NotBlank(message = "La dirección es obligatoria")
+    private String direccionEnvio;
 
-    // Lista de los productos incluidos en la venta, cada uno con su cantidad
+    @NotNull(message = "La lista de detalles no puede ser nula")
+    @NotEmpty(message = "Debe incluir al menos un producto")
+    @Valid
     private List<DetalleRequestDTO> detalles;
 
     @Data
     public static class DetalleRequestDTO {
 
-        // Identificador único del producto comprado
+        @NotNull(message = "El ID del producto es obligatorio")
         private Long productoId;
 
-        // Cantidad que el usuario desea comprar de ese producto
+        @NotNull(message = "La cantidad es obligatoria")
         private Integer cantidad;
-
-        // Importante: el precio unitario y el subtotal NO se aceptan desde el Frontend.
-        // Esto se determina en el servidor para evitar que se manipulen los valores.
-        // Esta lógica evita fraudes, errores o modificaciones del lado del usuario.
     }
 }
