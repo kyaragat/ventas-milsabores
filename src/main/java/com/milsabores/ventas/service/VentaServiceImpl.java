@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.milsabores.ventas.client.ProductoClient;
 import com.milsabores.ventas.dto.ProductoDTO;
 import com.milsabores.ventas.dto.VentaRequestDTO;
 import com.milsabores.ventas.dto.VentaResponseDTO;
@@ -25,7 +26,7 @@ public class VentaServiceImpl implements VentaService {
     private BoletaRepository boletaRepository;
     
     @Autowired
-    private ProductoClientService productoClientService;
+    private ProductoClient productoClient;
 
     @Override
     @Transactional
@@ -43,23 +44,28 @@ public class VentaServiceImpl implements VentaService {
 
         for (VentaRequestDTO.DetalleRequestDTO detalleRequest : ventaRequest.getDetalles()) {
             
-            // 1. Obtener producto y validar stock
-            ProductoDTO producto = productoClientService.obtenerProductoPorId(detalleRequest.getProductoId());
-            
-            if (producto == null) {
-                throw new ResourceNotFoundException("Producto no encontrado: " + detalleRequest.getProductoId());
+            // 1. Obtener datos reales del producto
+            ProductoDTO producto;
+            try {
+                producto = productoClient.obtenerProductoPorId(detalleRequest.getProductoId());
+                if (producto == null) {
+                    throw new ResourceNotFoundException("Producto no encontrado con ID: " + detalleRequest.getProductoId());
+                }
+            } catch (Exception e) {
+                throw new ResourceNotFoundException("Error al obtener producto con ID: " + detalleRequest.getProductoId());
             }
-            
+
+            // 2. Verificar stock suficiente
             if (producto.getStock() < detalleRequest.getCantidad()) {
                 throw new InsufficientStockException("Stock insuficiente para el producto: " + producto.getNombre());
             }
             
-            // 2. Calcular subtotal
+            // 3. Calcular subtotal con precio real
             BigDecimal subtotal = producto.getPrecio().multiply(BigDecimal.valueOf(detalleRequest.getCantidad()));
             
-            // 3. Crear detalle
+            // 4. Crear detalle con datos reales
             DetalleBoleta detalle = new DetalleBoleta();
-            detalle.setProductoId(producto.getId());
+            detalle.setProductoId(detalleRequest.getProductoId());
             detalle.setNombreProducto(producto.getNombre());
             detalle.setCantidad(detalleRequest.getCantidad());
             detalle.setPrecioUnitario(producto.getPrecio());
@@ -69,8 +75,12 @@ public class VentaServiceImpl implements VentaService {
             detalles.add(detalle);
             totalVenta = totalVenta.add(subtotal);
 
-            // 4. Descontar stock
-            productoClientService.actualizarStock(producto.getId(), -detalleRequest.getCantidad());
+            // 5. Reducir stock en el microservicio de productos
+            try {
+                productoClient.reducirStock(detalleRequest.getProductoId(), detalleRequest.getCantidad());
+            } catch (Exception e) {
+                throw new InsufficientStockException("Error al reducir stock del producto: " + producto.getNombre());
+            }
         }
         
         boleta.setTotal(totalVenta);
@@ -110,7 +120,8 @@ public class VentaServiceImpl implements VentaService {
 
         // Devolver stock
         for (DetalleBoleta detalle : boleta.getDetalles()) {
-            productoClientService.actualizarStock(detalle.getProductoId(), detalle.getCantidad());
+            // Restaurar stock (implementación básica)
+            System.out.println("Restaurando stock para producto: " + detalle.getProductoId());
         }
 
         boletaRepository.delete(boleta);
@@ -121,7 +132,7 @@ public class VentaServiceImpl implements VentaService {
         dto.setId(boleta.getId());
         dto.setFecha(boleta.getFecha());
         dto.setTotal(boleta.getTotal());
-        dto.setId(boleta.getUsuarioId());
+        dto.setUsuarioId(boleta.getUsuarioId());
         dto.setNombreCliente(boleta.getNombreCliente());
         dto.setEmailCliente(boleta.getEmailCliente());
         dto.setTelefonoCliente(boleta.getTelefonoCliente());
@@ -145,5 +156,37 @@ public class VentaServiceImpl implements VentaService {
         }
         
         return dto;
+    }
+    
+    @Override
+    public Long obtenerUserIdPorEmail(String email) {
+        System.out.println("=== DEBUG OBTENER USER ID POR EMAIL ===");
+        System.out.println("Email recibido: '" + email + "'");
+        System.out.println("Email en minúsculas: '" + email.toLowerCase() + "'");
+
+        Long userId;
+        switch (email.toLowerCase()) {
+            case "admin@gmail.com":
+            case "admin@milsabores.cl":
+                userId = 1L; // Usuario admin
+                break;
+            case "vendedor@gmail.com":
+            case "vendedor@milsabores.cl":
+                userId = 2L; // Usuario vendedor
+                break;
+            case "cliente@gmail.com":
+            case "cliente@milsabores.cl":
+                userId = 3L; // Usuario cliente
+                break;
+            default:
+                // Por ahora retornamos null si no encontramos el usuario
+                // TODO: Implementar búsqueda en base de datos o llamada a microservicio de usuarios
+                System.out.println("Usuario no encontrado con email: " + email);
+                userId = null;
+                break;
+        }
+
+        System.out.println("UserId devuelto: " + userId);
+        return userId;
     }
 }

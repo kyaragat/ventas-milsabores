@@ -7,7 +7,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,59 +21,81 @@ import java.util.stream.Collectors;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
-    @Value("${jwt.secret}")
-    private String jwtSecret;
-    
+    // IMPORTANTE: Esta clave debe ser la MISMA que usa el microservicio de usuarios
+    private static final String SECRET_KEY = "mySecretKeyForJWTGenerationInMilSaboresApplication2024";
+    private final SecretKey key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, 
-                                    HttpServletResponse response, 
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, 
                                     FilterChain filterChain) throws ServletException, IOException {
         
-        String token = getTokenFromRequest(request);
+        String authHeader = request.getHeader("Authorization");
+        System.out.println("=== JWT FILTER DEBUG ===");
+        System.out.println("Request URI: " + request.getRequestURI());
+        System.out.println("Request Method: " + request.getMethod());
+        System.out.println("Authorization Header: " + authHeader);
         
-        if (token != null && validateToken(token)) {
-            Claims claims = getClaimsFromToken(token);
-            String username = claims.getSubject();
-            Long userId = claims.get("userId", Long.class);
-            List<String> roles = claims.get("roles", List.class);
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            System.out.println("Token extraído: " + token.substring(0, Math.min(20, token.length())) + "...");
             
-            List<SimpleGrantedAuthority> authorities = roles.stream()
-                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                    .collect(Collectors.toList());
-            
-            UsernamePasswordAuthenticationToken auth = 
-                    new UsernamePasswordAuthenticationToken(userId, null, authorities);
-            
-            SecurityContextHolder.getContext().setAuthentication(auth);
+            try {
+                Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+                
+                System.out.println("Claims parseados exitosamente!");
+                System.out.println("Subject: " + claims.getSubject());
+                System.out.println("User ID: " + claims.get("userId"));
+                System.out.println("Roles: " + claims.get("roles"));
+                
+                String username = claims.getSubject();
+                Object userIdObj = claims.get("userId");
+                Long userId = null;
+                if (userIdObj instanceof Integer) {
+                    userId = ((Integer) userIdObj).longValue();
+                } else if (userIdObj instanceof Long) {
+                    userId = (Long) userIdObj;
+                } else if (userIdObj instanceof String) {
+                    userId = Long.parseLong((String) userIdObj);
+                }
+                @SuppressWarnings("unchecked")
+                List<String> roles = (List<String>) claims.get("roles");
+                
+                if (username != null && roles != null) {
+                    List<SimpleGrantedAuthority> authorities = roles.stream()
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                        .collect(Collectors.toList());
+                    
+                    System.out.println("Authorities creadas: " + authorities);
+                    
+                    UsernamePasswordAuthenticationToken auth = 
+                        new UsernamePasswordAuthenticationToken(username, null, authorities);
+                    
+                    // Agregamos userId como detalle para poder accederlo desde el controller
+                    auth.setDetails(userId);
+                    
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                    System.out.println("Authentication establecida exitosamente!");
+                } else {
+                    System.out.println("Username o roles son null - no se establece authentication");
+                }
+                
+            } catch (Exception e) {
+                System.out.println("ERROR al procesar JWT: " + e.getMessage());
+                e.printStackTrace();
+                logger.error("No se pudo extraer información del JWT: " + e.getMessage());
+            }
+        } else {
+            System.out.println("No se encontró token Bearer en el header");
         }
+        
+        System.out.println("Authentication final: " + SecurityContextHolder.getContext().getAuthentication());
+        System.out.println("========================");
+        
         
         filterChain.doFilter(request, response);
-    }
-    
-    private String getTokenFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-        return null;
-    }
-    
-    private boolean validateToken(String token) {
-        try {
-            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-    
-    private Claims getClaimsFromToken(String token) {
-        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
     }
 }

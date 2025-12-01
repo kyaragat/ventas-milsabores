@@ -19,6 +19,7 @@ public class VentaResponseDTO {
     private Long id;
     private LocalDateTime fecha;
     private BigDecimal total;
+    private Long usuarioId;
     private String nombreCliente;
     private String emailCliente;
     private String telefonoCliente;
@@ -43,6 +44,7 @@ public class VentaResponseDTO {
         this.id = boleta.getId();
         this.fecha = boleta.getFecha();
         this.total = boleta.getTotal();
+        this.usuarioId = boleta.getUsuarioId();
         this.nombreCliente = boleta.getNombreCliente();
         this.emailCliente = boleta.getEmailCliente();
         this.telefonoCliente = boleta.getTelefonoCliente();

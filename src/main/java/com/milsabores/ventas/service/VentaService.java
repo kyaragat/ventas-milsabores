@@ -16,4 +16,6 @@ public interface VentaService {
     List<VentaResponseDTO> listarVentasPorUsuario(Long userId);
 
     void anularVenta(Long id);
+
+    Long obtenerUserIdPorEmail(String email);
 }
