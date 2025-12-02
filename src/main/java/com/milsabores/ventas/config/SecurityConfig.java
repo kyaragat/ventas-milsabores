@@ -32,8 +32,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/ventas").authenticated() // Crear venta: todos los usuarios autenticados
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/ventas", "/api/v1/ventas/{id}").hasAnyRole("ADMIN", "VENDEDOR") // Listar ventas: solo admin/vendedor
-                .requestMatchers("/api/v1/ventas/mis-ventas", "/api/v1/ventas/user/{userId}").authenticated() // Ver mis ventas: todos autenticados
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/ventas", "\"/api/v1/ventas/{id:[0-9]+}\"\r\n" + //
+                                        "").hasAnyRole("ADMIN", "VENDEDOR") // Listar ventas: solo admin/vendedor
+                .requestMatchers("/api/v1/ventas/mis-ventas", "/api/v1/ventas/mis-compras", "/api/v1/ventas/user/{userId}").authenticated() // Ver mis ventas/compras: todos autenticados
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

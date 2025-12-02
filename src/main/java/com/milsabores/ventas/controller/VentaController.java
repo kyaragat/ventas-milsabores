@@ -213,19 +213,25 @@ public class VentaController {
     )
     public ResponseEntity<List<VentaResponseDTO>> obtenerMisVentas(Authentication authentication) {
         try {
-            Long usuarioId;
+            // Obtener userId directamente del JWT
+            Long usuarioId = null;
             if (authentication.getDetails() != null && !authentication.getDetails().toString().equals("null")) {
-                usuarioId = Long.parseLong(authentication.getDetails().toString());
-            } else {
-                String email = authentication.getName();
-                usuarioId = ventaService.obtenerUserIdPorEmail(email);
-                if (usuarioId == null) {
-                    return ResponseEntity.badRequest().build();
+                try {
+                    usuarioId = (Long) authentication.getDetails();
+                } catch (ClassCastException e) {
+                    usuarioId = Long.parseLong(authentication.getDetails().toString());
                 }
             }
+
+            if (usuarioId == null) {
+                System.err.println("No se pudo obtener userId del JWT token para mis-ventas");
+                return ResponseEntity.badRequest().build();
+            }
+
             List<VentaResponseDTO> ventas = ventaService.listarVentasPorUsuario(usuarioId);
             return ResponseEntity.ok(ventas);
         } catch (NumberFormatException e) {
+            System.err.println("Error al parsear userId: " + e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -245,25 +251,22 @@ public class VentaController {
             System.out.println("Authentication details: " + authentication.getDetails());
             System.out.println("Authentication authorities: " + authentication.getAuthorities());
 
-            Long userId;
-
-            // Intentar obtener userId desde los detalles
+            // Obtener userId directamente del JWT
+            Long userId = null;
             if (authentication.getDetails() != null && !authentication.getDetails().toString().equals("null")) {
-                String userIdStr = authentication.getDetails().toString();
-                System.out.println("UserId desde details: " + userIdStr);
-                userId = Long.parseLong(userIdStr);
-            } else {
-                // El JWT no incluye userId, pero tenemos el email como subject
-                String email = authentication.getName();
-                System.out.println("Obteniendo compras para usuario con email: " + email);
-
-                // Buscar usuario por email usando el servicio de ventas
-                userId = ventaService.obtenerUserIdPorEmail(email);
-                System.out.println("UserId obtenido por email: " + userId);
-                if (userId == null) {
-                    System.err.println("No se encontró usuario con email: " + email);
-                    return ResponseEntity.badRequest().build();
+                try {
+                    userId = (Long) authentication.getDetails();
+                    System.out.println("UserId desde JWT details: " + userId);
+                } catch (ClassCastException e) {
+                    // Intentar parsear como String si no es Long
+                    userId = Long.parseLong(authentication.getDetails().toString());
+                    System.out.println("UserId parseado desde details: " + userId);
                 }
+            }
+
+            if (userId == null) {
+                System.err.println("No se pudo obtener userId del JWT token");
+                return ResponseEntity.badRequest().build();
             }
 
             System.out.println("UserId final para buscar: " + userId);

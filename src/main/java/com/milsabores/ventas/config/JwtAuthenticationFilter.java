@@ -23,6 +23,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
     // IMPORTANTE: Esta clave debe ser la MISMA que usa el microservicio de usuarios
     private static final String SECRET_KEY = "mySecretKeyForJWTGenerationInMilSaboresApplication2024";
+    // Usar la clave completa - DEBE ser igual en todos los microservicios
     private final SecretKey key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
 
     @Override
@@ -49,7 +50,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 System.out.println("Claims parseados exitosamente!");
                 System.out.println("Subject: " + claims.getSubject());
                 System.out.println("User ID: " + claims.get("userId"));
-                System.out.println("Roles: " + claims.get("roles"));
+                System.out.println("Role (singular): " + claims.get("role"));
+                System.out.println("Roles (plural): " + claims.get("roles"));
                 
                 String username = claims.getSubject();
                 Object userIdObj = claims.get("userId");
@@ -61,8 +63,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 } else if (userIdObj instanceof String) {
                     userId = Long.parseLong((String) userIdObj);
                 }
-                @SuppressWarnings("unchecked")
-                List<String> roles = (List<String>) claims.get("roles");
+                
+                // Buscar roles tanto en formato singular como plural
+                List<String> roles = null;
+                Object rolesClaim = claims.get("roles");
+                Object roleClaim = claims.get("role");
+                
+                if (rolesClaim instanceof List) {
+                    @SuppressWarnings("unchecked")
+                    List<String> rolesList = (List<String>) rolesClaim;
+                    roles = rolesList;
+                } else if (roleClaim instanceof String) {
+                    // Si viene un rol único como string, convertirlo a lista
+                    roles = List.of((String) roleClaim);
+                }
                 
                 if (username != null && roles != null) {
                     List<SimpleGrantedAuthority> authorities = roles.stream()

@@ -179,10 +179,9 @@ public class VentaServiceImpl implements VentaService {
                 userId = 3L; // Usuario cliente
                 break;
             default:
-                // Por ahora retornamos null si no encontramos el usuario
-                // TODO: Implementar búsqueda en base de datos o llamada a microservicio de usuarios
-                System.out.println("Usuario no encontrado con email: " + email);
-                userId = null;
+                // Por ahora asignamos un userId genérico para clientes no mapeados
+                System.out.println("Usuario no encontrado con email: " + email + " - Asignando userId genérico 99");
+                userId = 99L; // ID temporal para cualquier cliente no mapeado
                 break;
         }
 
